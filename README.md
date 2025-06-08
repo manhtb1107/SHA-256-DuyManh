@@ -10,9 +10,10 @@
 <br>
 <div align="center">
     <p align="center">
-        <img src="Đăng nhập" alt="AIoTLab Logo" width="170"/>
-        <img src="fitdnu_logo.png" alt="AIoTLab Logo" width="180"/>
-        <img src="dnu_logo.png" alt="DaiNam University Logo" width="200"/>
+        <img src="Đăng nhập.png" alt="AIoTLab Logo" width="170"/>
+        <img src="Chat.png" alt="AIoTLab Logo" width="180"/>
+        <img src="chat2.png" alt="DaiNam University Logo" width="200"/>
+        <img src="Chat3.png" alt="DaiNam University Logo" width="200"/>
     </p>
 </div>
 Ứng dụng Gửi File Peer-to-Peer (P2P) An Toàn
