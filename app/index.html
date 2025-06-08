@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>P2P File Transfer - Thiết kế mới</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #f0f4f9; /* Lighter slate background */
+      }
+      .btn {
+        transition: all 0.2s ease-in-out;
+      }
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+      }
+      .input-field {
+        transition: all 0.2s ease-in-out;
+      }
+      .input-field:focus {
+        border-color: #4f46e5; /* Indigo */
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+      }
+      .toast {
+        visibility: hidden;
+        opacity: 0;
+        transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        transform: translateY(20px) scale(0.9);
+      }
+      .toast.show {
+        visibility: visible;
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+      /* Glassmorphism effect for panels */
+      .panel {
+        background: rgba(255, 255, 255, 0.6);
+        backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 8px 32px 0 rgba(100, 116, 139, 0.1);
+      }
+      /* Scrollbar styling */
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 8px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #bdc5d1;
+        border-radius: 4px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #9faab9;
+      }
+    </style>
+  </head>
+  <body class="flex items-center justify-center bg-slate-100">
+    <!-- TOAST NOTIFICATION -->
+    <div
+      id="toast"
+      class="toast fixed bottom-5 right-5 bg-red-500 text-white py-3 px-5 rounded-xl shadow-lg flex items-center gap-3 z-50"
+    >
+      <i id="toast-icon" class="fa-solid fa-circle-xmark"></i>
+      <span id="toast-message" class="font-medium"></span>
+    </div>
+
+    <!-- AUTHENTICATION CONTAINER -->
+    <div id="auth-container" class="w-full max-w-sm px-4">
+      <div class="panel p-8 rounded-3xl w-full">
+        <div id="login-form">
+          <h2 class="text-3xl font-bold text-slate-800 text-center">
+            Chào mừng!
+          </h2>
+          <p class="text-center text-slate-500 mt-2">Đăng nhập để tiếp tục</p>
+          <div class="space-y-4 mt-8">
+            <input
+              id="login-username"
+              type="text"
+              placeholder="Tên đăng nhập"
+              class="input-field w-full px-4 py-3 rounded-lg bg-white/70 border-2 border-transparent"
+            />
+            <input
+              id="login-password"
+              type="password"
+              placeholder="Mật khẩu"
+              class="input-field w-full px-4 py-3 rounded-lg bg-white/70 border-2 border-transparent"
+            />
+          </div>
+          <button
+            id="login-btn"
+            class="btn w-full mt-6 bg-gradient-to-br from-indigo-500 to-blue-500 text-white font-bold py-3 rounded-lg shadow-lg shadow-indigo-500/20"
+          >
+            Đăng nhập
+          </button>
+          <p class="text-center text-sm text-slate-500 mt-6">
+            Chưa có tài khoản?
+            <a
+              href="#"
+              id="show-register"
+              class="font-semibold text-indigo-500 hover:text-indigo-400"
+              >Đăng ký ngay</a
+            >
+          </p>
+        </div>
+        <div id="register-form" class="hidden">
+          <h2 class="text-3xl font-bold text-slate-800 text-center">
+            Tạo tài khoản
+          </h2>
+          <p class="text-center text-slate-500 mt-2">
+            Bắt đầu chia sẻ file an toàn
+          </p>
+          <div class="space-y-4 mt-8">
+            <input
+              id="register-username"
+              type="text"
+              placeholder="Tên đăng nhập"
+              class="input-field w-full px-4 py-3 rounded-lg bg-white/70 border-2 border-transparent"
+            />
+            <input
+              id="register-password"
+              type="password"
+              placeholder="Mật khẩu"
+              class="input-field w-full px-4 py-3 rounded-lg bg-white/70 border-2 border-transparent"
+            />
+          </div>
+          <button
+            id="register-btn"
+            class="btn w-full mt-6 bg-gradient-to-br from-indigo-500 to-blue-500 text-white font-bold py-3 rounded-lg shadow-lg shadow-indigo-500/20"
+          >
+            Đăng ký
+          </button>
+          <p class="text-center text-sm text-slate-500 mt-6">
+            Đã có tài khoản?
+            <a
+              href="#"
+              id="show-login"
+              class="font-semibold text-indigo-500 hover:text-indigo-400"
+              >Đăng nhập</a
+            >
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN APPLICATION CONTAINER -->
+    <div
+      id="main-app"
+      class="hidden h-full w-full max-w-screen-xl grid-cols-12 gap-6 p-6"
+    >
+      <!-- Left Panel: User List -->
+      <div class="panel col-span-2 rounded-3xl p-4 flex flex-col">
+        <h2
+          class="text-xl font-bold text-slate-800 pb-4 px-2 border-b border-slate-200/80"
+        >
+          Người dùng Online
+        </h2>
+        <div
+          id="user-list"
+          class="flex-grow mt-4 space-y-2 overflow-y-auto custom-scrollbar pr-2"
+        >
+          <!-- User items will be injected here -->
+        </div>
+        <div
+          id="current-user-info"
+          class="mt-4 pt-4 border-t border-slate-200/80 flex items-center justify-between"
+        >
+          <!-- Current user info + logout -->
+        </div>
+      </div>
+
+      <!-- Center Panel: File Transfer -->
+      <div class="panel col-span-6 rounded-3xl p-6 flex flex-col">
+        <h2 class="text-xl font-bold text-slate-800 mb-4">Gửi File An Toàn</h2>
+        <div
+          id="drop-zone"
+          class="group flex-grow flex flex-col items-center justify-center border-2 border-dashed border-slate-400/50 rounded-2xl p-6 cursor-pointer hover:border-indigo-400 hover:bg-indigo-500/10 transition-all duration-300"
+        >
+          <i
+            class="fa-solid fa-shield-halved text-6xl text-slate-400 group-hover:text-indigo-500 group-hover:scale-110 transition-all duration-300"
+          ></i>
+          <p class="mt-4 text-slate-600 text-lg">
+            Kéo thả hoặc
+            <span class="text-indigo-500 font-semibold">chọn một file</span>
+          </p>
+          <p class="text-slate-500 text-sm">
+            File của bạn sẽ được gửi trực tiếp và an toàn.
+          </p>
+          <p
+            id="file-name"
+            class="text-center mt-4 text-slate-700 font-semibold h-6 text-base"
+          ></p>
+        </div>
+        <input type="file" id="file-input" class="hidden" />
+        <div class="mt-4">
+          <label
+            for="recipient-select"
+            class="block text-sm font-medium text-slate-700 mb-2"
+            >Gửi đến:</label
+          >
+          <select
+            id="recipient-select"
+            class="input-field w-full px-4 py-3 rounded-lg bg-white/70 border-2 border-transparent"
+          ></select>
+        </div>
+        <button
+          id="send-btn"
+          disabled
+          class="btn transition w-full mt-4 bg-gradient-to-br from-indigo-500 to-blue-500 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 disabled:from-slate-400 disabled:to-slate-400 disabled:shadow-none disabled:cursor-not-allowed"
+        >
+          <i class="fa-solid fa-paper-plane"></i> Gửi File
+        </button>
+      </div>
+
+      <!-- Right Panel: Notifications -->
+      <div class="panel col-span-4 rounded-3xl p-4 flex flex-col">
+        <h2
+          class="text-xl font-bold text-slate-800 pb-4 px-2 border-b border-slate-200/80"
+        >
+          Thông báo
+        </h2>
+        <div
+          id="notifications"
+          class="flex-grow mt-4 space-y-3 overflow-y-auto custom-scrollbar pr-2"
+        >
+          <p id="no-notifications" class="text-slate-500 text-center mt-8">
+            Chưa có thông báo mới.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const WEBSOCKET_URI = "ws://localhost:8765";
+      let ws = null;
+      let currentUser = null;
+      let selectedFile = null;
+      let usersMap = new Map(); // Store user data for avatar colors
+
+      // --- DOM Elements ---
+      const authContainer = document.getElementById("auth-container");
+      const mainApp = document.getElementById("main-app");
+      const loginForm = document.getElementById("login-form"),
+        registerForm = document.getElementById("register-form");
+      const showRegisterLink = document.getElementById("show-register"),
+        showLoginLink = document.getElementById("show-login");
+      const loginBtn = document.getElementById("login-btn"),
+        registerBtn = document.getElementById("register-btn");
+      const userList = document.getElementById("user-list"),
+        currentUserInfo = document.getElementById("current-user-info");
+      const dropZone = document.getElementById("drop-zone"),
+        fileInput = document.getElementById("file-input"),
+        fileNameDisplay = document.getElementById("file-name");
+      const recipientSelect = document.getElementById("recipient-select"),
+        sendBtn = document.getElementById("send-btn");
+      const notifications = document.getElementById("notifications"),
+        noNotifications = document.getElementById("no-notifications");
+      const toast = document.getElementById("toast"),
+        toastIcon = document.getElementById("toast-icon"),
+        toastMessage = document.getElementById("toast-message");
+
+      // --- WEBSOCKET LOGIC ---
+      function connectWebSocket() {
+        ws = new WebSocket(WEBSOCKET_URI);
+        ws.onopen = () => {
+          console.log("Connected to WebSocket server.");
+          document.body.classList.remove("bg-slate-200");
+        };
+        ws.onmessage = handleWebSocketMessage;
+        ws.onclose = () => {
+          console.log("WebSocket disconnected.");
+          if (currentUser) {
+            showToast("Mất kết nối server. Đang thử lại...", "error");
+            document.body.classList.add("bg-slate-200");
+          }
+          setTimeout(connectWebSocket, 3000); // Reconnect attempt
+        };
+        ws.onerror = () => showToast("Không thể kết nối đến server.", "error");
+      }
+
+      function handleWebSocketMessage(event) {
+        const response = JSON.parse(event.data);
+        console.log("From server:", response);
+        switch (response.type) {
+          case "auth_response":
+            handleAuthResponse(response);
+            break;
+          case "user_list_update":
+            updateUserList(response.users);
+            break;
+          case "receive_file":
+            handleFileReceipt(response);
+            break;
+          case "transfer_response":
+          case "error_response":
+            showToast(response.message, response.status || "error");
+            break;
+        }
+      }
+
+      // --- AUTHENTICATION & UI ---
+      function setupAuthListeners() {
+        showRegisterLink.addEventListener("click", (e) => {
+          e.preventDefault();
+          loginForm.classList.add("hidden");
+          registerForm.classList.remove("hidden");
+        });
+        showLoginLink.addEventListener("click", (e) => {
+          e.preventDefault();
+          registerForm.classList.add("hidden");
+          loginForm.classList.remove("hidden");
+        });
+        registerBtn.addEventListener("click", () =>
+          sendAuthRequest("register")
+        );
+        loginBtn.addEventListener("click", () => sendAuthRequest("login"));
+      }
+
+      function sendAuthRequest(type) {
+        const usernameInput = document.getElementById(`${type}-username`);
+        const passwordInput = document.getElementById(`${type}-password`);
+        const username = usernameInput.value.trim();
+        const password = passwordInput.value.trim();
+        if (!username || !password)
+          return showToast("Vui lòng nhập đầy đủ thông tin.", "error");
+        ws.send(JSON.stringify({ type, username, password }));
+      }
+
+      function handleAuthResponse(response) {
+        if (response.status === "success") {
+          if (response.userData) {
+            // Login success
+            currentUser = response.userData;
+            authContainer.classList.add("hidden");
+            mainApp.classList.remove("hidden");
+            mainApp.classList.add("grid");
+            renderCurrentUserInfo();
+          } else {
+            // Register success
+            showToast(response.message, "success");
+            showLoginLink.click();
+            document.getElementById("login-username").value =
+              document.getElementById("register-username").value;
+            document.getElementById("register-username").value = "";
+            document.getElementById("register-password").value = "";
+          }
+        } else {
+          showToast(response.message, "error");
+        }
+      }
+
+      function renderCurrentUserInfo() {
+        currentUserInfo.innerHTML = `
+                <div class="flex items-center gap-3">
+                    ${createAvatar(
+                      currentUser.username,
+                      currentUser.avatarColor
+                    )}
+                    <span class="font-bold text-slate-700">${
+                      currentUser.username
+                    }</span>
+                </div>
+                <button id="logout-btn" class="btn text-slate-500 hover:text-red-500 transition-colors"><i class="fa-solid fa-right-from-bracket fa-lg"></i></button>
+            `;
+        document
+          .getElementById("logout-btn")
+          .addEventListener("click", () => window.location.reload());
+      }
+
+      function updateUserList(users) {
+        usersMap.clear();
+        users.forEach((u) => usersMap.set(u.username, u));
+
+        userList.innerHTML = "";
+        const savedRecipient = recipientSelect.value;
+        recipientSelect.innerHTML = `<option value="">-- Chọn người nhận --</option>`;
+
+        users.forEach((user) => {
+          const isCurrentUser = user.username === currentUser.username;
+          const userElement = document.createElement("div");
+          userElement.className = `flex items-center gap-3 p-2.5 rounded-xl transition-colors ${
+            isCurrentUser ? "bg-indigo-500/20" : "hover:bg-slate-400/10"
+          }`;
+          userElement.innerHTML = `
+                    ${createAvatar(user.username, user.avatarColor)}
+                    <span class="font-semibold text-slate-700">${
+                      user.username
+                    } ${
+            isCurrentUser
+              ? "<span class='font-normal text-slate-500'>(Bạn)</span>"
+              : ""
+          }</span>
+                `;
+          userList.appendChild(userElement);
+
+          if (!isCurrentUser) {
+            const option = document.createElement("option");
+            option.value = user.username;
+            option.textContent = user.username;
+            recipientSelect.appendChild(option);
+          }
+        });
+        if (usersMap.has(savedRecipient)) {
+          recipientSelect.value = savedRecipient;
+        }
+      }
+
+      // --- FILE HANDLING ---
+      function setupFileHandlers() {
+        dropZone.addEventListener("click", () => fileInput.click());
+        dropZone.addEventListener("dragover", (e) => {
+          e.preventDefault();
+          dropZone.classList.add("bg-indigo-500/20", "border-indigo-400");
+        });
+        dropZone.addEventListener("dragleave", (e) => {
+          e.preventDefault();
+          dropZone.classList.remove("bg-indigo-500/20", "border-indigo-400");
+        });
+        dropZone.addEventListener("drop", (e) => {
+          e.preventDefault();
+          dropZone.classList.remove("bg-indigo-500/20", "border-indigo-400");
+          if (e.dataTransfer.files.length) {
+            handleFileSelect(e.dataTransfer.files[0]);
+          }
+        });
+        fileInput.addEventListener("change", (e) =>
+          handleFileSelect(e.target.files[0])
+        );
+        sendBtn.addEventListener("click", sendFile);
+      }
+
+      function handleFileSelect(file) {
+        if (!file) return;
+        selectedFile = file;
+        fileNameDisplay.textContent = file.name;
+        sendBtn.disabled = false;
+      }
+
+      async function sendFile() {
+        if (!selectedFile || !recipientSelect.value) {
+          return showToast("Vui lòng chọn file và người nhận.", "error");
+        }
+        sendBtn.disabled = true;
+        sendBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý...`;
+
+        try {
+          const arrayBuffer = await selectedFile.arrayBuffer();
+          const hashBuffer = await crypto.subtle.digest("SHA-256", arrayBuffer);
+          const hashHex = Array.from(new Uint8Array(hashBuffer))
+            .map((b) => b.toString(16).padStart(2, "0"))
+            .join("");
+          const base64String = await toBase64(selectedFile);
+
+          ws.send(
+            JSON.stringify({
+              type: "send_file",
+              recipient: recipientSelect.value,
+              filename: selectedFile.name,
+              payload: base64String.split(",")[1],
+              hash: hashHex,
+            })
+          );
+
+          showToast(`Đang gửi ${selectedFile.name}...`, "info");
+          selectedFile = null;
+          fileInput.value = "";
+          fileNameDisplay.textContent = "";
+        } catch (error) {
+          showToast(`Lỗi khi xử lý file: ${error.message}`, "error");
+        } finally {
+          sendBtn.disabled = false;
+          sendBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Gửi File`;
+        }
+      }
+
+      function handleFileReceipt(fileData) {
+        noNotifications.classList.add("hidden");
+        const notifId = `notif-${Date.now()}`;
+        const notifElement = document.createElement("div");
+        notifElement.id = notifId;
+        notifElement.className =
+          "bg-white/80 p-3 rounded-xl border border-slate-200/80";
+        notifElement.innerHTML = `
+            <div class="flex items-start gap-3">
+                ${createAvatar(
+                  fileData.sender,
+                  usersMap.get(fileData.sender)?.avatarColor || "#ccc"
+                )}
+                <div class="flex-grow overflow-hidden">
+                    <p class="text-sm text-slate-700"><span class="font-bold">${
+                      fileData.sender
+                    }</span> đã gửi cho bạn một file.</p>
+                    <p class="text-sm text-slate-600 font-medium truncate mt-1" title="${
+                      fileData.filename
+                    }">${fileData.filename}</p>
+                    <div class="mt-2">
+                      <p class="text-xs text-slate-500 font-medium">SHA-256 Hash:</p>
+                      <code class="block text-xs text-slate-700 bg-slate-200/60 p-2 rounded-lg mt-1 break-all select-all font-mono">${
+                        fileData.hash
+                      }</code>
+                    </div>
+                    <div class="verification-status text-xs font-bold mt-3 h-4"></div>
+                    <button class="verify-btn mt-2 text-sm bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-1.5 px-4 rounded-lg transition-colors">
+                        <i class="fa-solid fa-shield-halved mr-1"></i>Kiểm tra & Tải về
+                    </button>
+                </div>
+            </div>
+        `;
+        notifications.prepend(notifElement);
+
+        const verifyBtn = notifElement.querySelector(".verify-btn");
+        verifyBtn.addEventListener("click", () => {
+          verifyAndDownload(
+            verifyBtn,
+            fileData.payload,
+            fileData.filename,
+            fileData.hash
+          );
+        });
+      }
+
+      async function verifyAndDownload(
+        btn,
+        base64Payload,
+        filename,
+        originalHash
+      ) {
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i>Đang kiểm tra...`;
+        const statusEl = btn
+          .closest(".flex-grow")
+          .querySelector(".verification-status");
+        statusEl.innerHTML = ``;
+
+        try {
+          const byteString = atob(base64Payload);
+          const ab = new ArrayBuffer(byteString.length);
+          const ia = new Uint8Array(ab);
+          for (let i = 0; i < byteString.length; i++)
+            ia[i] = byteString.charCodeAt(i);
+
+          const hashBuffer = await crypto.subtle.digest("SHA-256", ab);
+          const calculatedHash = Array.from(new Uint8Array(hashBuffer))
+            .map((b) => b.toString(16).padStart(2, "0"))
+            .join("");
+
+          if (calculatedHash === originalHash) {
+            statusEl.innerHTML = `<span class="text-emerald-600 font-semibold"><i class="fa-solid fa-check-circle mr-1"></i>Xác thực thành công!</span>`;
+            showToast(`File "${filename}" đã được xác thực.`, "success");
+            downloadFileFromBase64(base64Payload, filename);
+            btn.className =
+              "mt-2 text-sm bg-emerald-500 text-white font-bold py-1.5 px-4 rounded-lg transition-colors cursor-default";
+            btn.innerHTML = `<i class="fa-solid fa-check mr-1"></i>Đã tải`;
+          } else {
+            statusEl.innerHTML = `<span class="text-red-600 font-semibold"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Lỗi: Mã hash không khớp!</span>`;
+            showToast(
+              "Cảnh báo: File có thể đã bị lỗi hoặc bị thay đổi!",
+              "error"
+            );
+            btn.disabled = false;
+            btn.className =
+              "mt-2 text-sm bg-red-500 hover:bg-red-600 text-white font-bold py-1.5 px-4 rounded-lg transition-colors";
+            btn.innerHTML = `<i class="fa-solid fa-download mr-1"></i>Vẫn tải xuống`;
+            btn.onclick = () => {
+              downloadFileFromBase64(base64Payload, filename);
+              btn.disabled = true;
+              btn.className =
+                "mt-2 text-sm bg-slate-400 text-white font-bold py-1.5 px-4 rounded-lg transition cursor-default";
+              btn.innerHTML = `<i class="fa-solid fa-check mr-1"></i>Đã tải (có thể lỗi)`;
+            };
+          }
+        } catch (error) {
+          statusEl.innerHTML = `<span class="text-red-600 font-semibold">Lỗi trong quá trình kiểm tra.</span>`;
+          showToast(`Lỗi khi kiểm tra file: ${error.message}`, "error");
+          btn.disabled = false;
+          btn.innerHTML = `<i class="fa-solid fa-shield-halved mr-1"></i>Thử lại`;
+        }
+      }
+
+      function downloadFileFromBase64(base64Payload, filename) {
+        const byteString = atob(base64Payload);
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+        for (let i = 0; i < byteString.length; i++)
+          ia[i] = byteString.charCodeAt(i);
+        const blob = new Blob([ab], { type: "application/octet-stream" });
+
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        URL.revokeObjectURL(link.href);
+        link.remove();
+      }
+
+      // --- UTILITY FUNCTIONS ---
+      const toBase64 = (file) =>
+        new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = (error) => reject(error);
+        });
+
+      function createAvatar(username, color) {
+        const initial = username ? username.charAt(0).toUpperCase() : "?";
+        return `<div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-xl flex-shrink-0" style="background-color: ${color};">${initial}</div>`;
+      }
+
+      let toastTimer;
+      function showToast(message, type = "error") {
+        toastMessage.textContent = message;
+        const colors = {
+          error: "bg-red-500",
+          success: "bg-emerald-500",
+          info: "bg-blue-500",
+        };
+        toast.className = `toast show fixed bottom-5 right-5 text-white py-3 px-5 rounded-xl shadow-lg flex items-center gap-3 ${colors[type]} z-50`;
+        const icons = {
+          error: "fa-circle-xmark",
+          success: "fa-circle-check",
+          info: "fa-circle-info",
+        };
+        toastIcon.className = `fa-solid ${icons[type]}`;
+
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+          toast.className = "toast z-50";
+        }, 4000);
+      }
+
+      // --- INITIALIZATION ---
+      setupAuthListeners();
+      setupFileHandlers();
+      connectWebSocket();
+    </script>
+  </body>
+</html>
