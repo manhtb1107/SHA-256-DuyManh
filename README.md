@@ -1,3 +1,20 @@
+<h2 align="center">
+    <a href="https://dainam.edu.vn/vi/khoa-cong-nghe-thong-tin">
+    🎓 Faculty of Information Technology (DaiNam University)
+    </a>
+</h2>
+<br>
+<h2 align="center">
+   CRYPTOGRAPHY AND CYBER SECURITY
+</h2>
+<br>
+<div align="center">
+    <p align="center">
+        <img src="Đăng nhập" alt="AIoTLab Logo" width="170"/>
+        <img src="fitdnu_logo.png" alt="AIoTLab Logo" width="180"/>
+        <img src="dnu_logo.png" alt="DaiNam University Logo" width="200"/>
+    </p>
+</div>
 Ứng dụng Gửi File Peer-to-Peer (P2P) An Toàn
 Giới thiệu
 Đây là một ứng dụng web cho phép người dùng gửi và nhận file trực tiếp với nhau (peer-to-peer) trong thời gian thực. Dự án được xây dựng với kiến trúc client-server sử dụng WebSocket để giao tiếp, trong đó server đóng vai trò trung gian để kết nối và điều phối, còn việc truyền tải file diễn ra trực tiếp giữa các client.
