@@ -5,7 +5,7 @@
 </h2>
 <br>
 <h2 align="center">
-   CRYPTOGRAPHY AND CYBER SECURITY
+   App truyền file kiểm tra vẹn toàn ( SHA-256 )
 </h2>
 <br>
 <div align="center">
